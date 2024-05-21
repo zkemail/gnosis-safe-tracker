@@ -17,16 +17,18 @@ const alchemy = new Alchemy(config);
 // Define the structure for the SafeRequest
 interface SafeRequest {
   wallet_addr: string;
+  safe_addr: string;
 }
 
 // Function to send a POST request to the bore.pub API
-const sendSafeRequest = async (walletAddress: string, addOrRemove: string) => {
+const sendSafeRequest = async (walletAddress: string, safeAddress: string, addOrRemove: string) => {
   const safeRequest: SafeRequest = {
     wallet_addr: walletAddress,
+    safe_addr: safeAddress,
   };
 
   try {
-    const response = await fetch(`http://bore.pub:6644/api/safe-${addOrRemove}`, {
+    const response = await fetch(`http://bore.pub:44168/api/${addOrRemove}SafeOwner`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -39,9 +41,9 @@ const sendSafeRequest = async (walletAddress: string, addOrRemove: string) => {
     }
 
     const data = await response.text();
-    console.log("Response from bore.pub API:", data);
+    console.log("Response from API:", data);
   } catch (error) {
-    console.error("Error sending request to bore.pub API:", error);
+    console.error("Error sending request to API:", error);
   }
 };
 
@@ -52,6 +54,9 @@ const main = async () => {
 
   // Add these event selectors to the topics array for subscription
   const topics = [addedOwnerEvent, removedOwnerEvent];
+  // await sendSafeRequest("0x2dbe252f92cb4b77762bb5846bbbb3b4e622684d", "0x000000000000000087c51cd469a0e1e2af0e0e597fd88d9ae4baa96700000010", "add");
+  await sendSafeRequest("0x2dbe252f92cb4b77762bb5846bbbb3b4e622684d", "0x000000000000000087c51cd469a0e1e2af0e0e597fd88d9ae4baa96700000010", "remove");
+
   // Subscribe to logs using Alchemy
   const subscription = alchemy.ws.on(topics, async (log, event) => {
     // Parse the logs for the specific transaction
@@ -60,15 +65,17 @@ const main = async () => {
     const decodedData = abiCoder.decode(["address"], data);
     const affectedAddress = decodedData[0];
     console.log(`Affected Address: ${affectedAddress}`);
+    const eventSenderAddress = log.address;
+    console.log(`Event Sender Address: ${eventSenderAddress}`);
 
     switch (log.topics[0]) {
       case addedOwnerEvent:
         console.log(`Owner Added: ${affectedAddress}`);
-        await sendSafeRequest(affectedAddress, "add");
+        await sendSafeRequest(affectedAddress, eventSenderAddress, "add");
         break;
       case removedOwnerEvent:
         console.log(`Owner Removed: ${affectedAddress}`);
-        await sendSafeRequest(affectedAddress, "remove");
+        await sendSafeRequest(affectedAddress, eventSenderAddress, "remove");
         break;
       default:
         console.log("The data does not match any known event selectors.");
