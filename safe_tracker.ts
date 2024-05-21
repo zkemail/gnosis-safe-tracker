@@ -2,10 +2,12 @@ import { ethers } from "ethers";
 // Imports the Alchemy SDK
 const { Alchemy, Network } = require("alchemy-sdk");
 const { keccak256 } = require("js-sha3");
+import { config as dotenvConfig } from 'dotenv';
+dotenvConfig();
 
 // Configures the Alchemy SDK
 const config = {
-  apiKey: "_VfAMPkJ0vaQU2_rPkNg62ZxibEQ6tSG", // Replace with your API key
+  apiKey: process.env.ALCHEMY_API_KEY, // API key is read from environment variables
   network: Network.BASE_SEPOLIA, // Replace with your network
 };
 
